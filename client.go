@@ -46,13 +46,18 @@ func main() {
 	readingNonce := sodium.SecretBoxNonce{}
 	writingNonce := sodium.SecretBoxNonce{}
 
-	readingNonce.Bytes = ourNonce.Bytes[0:halfNonceSize]
+	readingNonce.Bytes = make([]byte, halfNonceSize)
+	copy(readingNonce.Bytes, ourNonce.Bytes[0:halfNonceSize])
 	readingNonce.Bytes = append(readingNonce.Bytes, theirNonce.Bytes[halfNonceSize:]...)
 	fmt.Println("readingNonce", readingNonce)
 
-	writingNonce.Bytes = theirNonce.Bytes[0:halfNonceSize]
+	writingNonce.Bytes = make([]byte, halfNonceSize)
+	copy(writingNonce.Bytes, theirNonce.Bytes[0:halfNonceSize])
 	writingNonce.Bytes = append(writingNonce.Bytes, ourNonce.Bytes[halfNonceSize:]...)
 	fmt.Println("writingNonce", writingNonce)
+
+	fmt.Println("ourNonce", ourNonce)
+	fmt.Println("theirNonce", theirNonce)
 
 	command := sodium.Bytes([]byte("print(123)"))
 	key := sodium.SecretBoxKey{}
@@ -79,7 +84,7 @@ func main() {
 
 	// var buf []byte
 	// var nonce [24]byte
-	// nonce = writingNonce.Bytes[]
+	// nonce = writingNonce.Bytes[:]
 	// encrypted := secretbox.Seal(buf, command, &nonce, &key.Bytes)
 	// if err != nil {
 	// 	log.Fatal(err)
