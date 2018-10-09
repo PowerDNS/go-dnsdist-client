@@ -7,66 +7,56 @@ import (
 	"encoding/binary"
 	"log"
 	"net"
-	"github.com/jamesruan/sodium"
-    // "golang.org/x/crypto/nacl/secretbox"
+    "golang.org/x/crypto/nacl/secretbox"
+    "crypto/rand"
 )
 
 func main() {
-	ourNonce := sodium.SecretBoxNonce{}
-	sodium.Randomize(&ourNonce)
+	ourNonce := make([]byte, 24)
+	rand.Read(ourNonce)
 	fmt.Println("ourNonce", ourNonce)
 
 	conn, err := net.Dial("tcp", "127.0.0.1:5199")
 	if err != nil {
 		log.Fatal(err)
 	}
-	n, err := conn.Write(ourNonce.Bytes)
+	n, err := conn.Write(ourNonce)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("wrote", n, "bytes")
-	// theirNonce := make([]byte, 0, len(ourNonce.Bytes))
-	theirNonce := sodium.SecretBoxNonce{}
-	theirNonce.Bytes = make([]byte, len(ourNonce.Bytes))
-	fmt.Println("len(ourNonce.Bytes)=", len(ourNonce.Bytes))
-	fmt.Println("len(theirNonce.Bytes)=", len(theirNonce.Bytes))
-	n2, err := io.ReadFull(conn, theirNonce.Bytes)
+	theirNonce := make([]byte, 24)
+	n2, err := io.ReadFull(conn, theirNonce)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("got", n2, "bytes")
 	fmt.Println("theirNonce", theirNonce)
 
-	if len(ourNonce.Bytes) != len(theirNonce.Bytes) {
-		log.Fatal("Received a nonce of size", len(theirNonce.Bytes),",  expecting ", len(ourNonce.Bytes))
+	if len(ourNonce) != len(theirNonce) {
+		log.Fatal("Received a nonce of size", len(theirNonce),",  expecting ", len(ourNonce))
 	}
 
-	halfNonceSize := int(len(ourNonce.Bytes)/2)
-	fmt.Println("halfNonceSize=", halfNonceSize)
-	readingNonce := sodium.SecretBoxNonce{}
-	writingNonce := sodium.SecretBoxNonce{}
-
-	readingNonce.Bytes = make([]byte, halfNonceSize)
-	copy(readingNonce.Bytes, ourNonce.Bytes[0:halfNonceSize])
-	readingNonce.Bytes = append(readingNonce.Bytes, theirNonce.Bytes[halfNonceSize:]...)
+	var readingNonce [24]byte
+	copy(readingNonce[0:12], ourNonce[0:12])
+	copy(readingNonce[12:], theirNonce[12:])
 	fmt.Println("readingNonce", readingNonce)
 
-	writingNonce.Bytes = make([]byte, halfNonceSize)
-	copy(writingNonce.Bytes, theirNonce.Bytes[0:halfNonceSize])
-	writingNonce.Bytes = append(writingNonce.Bytes, ourNonce.Bytes[halfNonceSize:]...)
+	var writingNonce [24]byte
+	copy(writingNonce[0:12], theirNonce[0:12])
+	copy(writingNonce[12:], ourNonce[12:])
 	fmt.Println("writingNonce", writingNonce)
 
-	fmt.Println("ourNonce", ourNonce)
-	fmt.Println("theirNonce", theirNonce)
-
-	command := sodium.Bytes([]byte("showVersion()"))
-	key := sodium.SecretBoxKey{}
-	key.Bytes, err = base64.StdEncoding.DecodeString("WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
+	command := []byte("print(123); return showVersion()")
+	var key [32]byte
+	xkey, err := base64.StdEncoding.DecodeString("WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
 	if err != nil {
 		log.Fatal(err)
 	}
+	copy(key[0:32], xkey)
 	fmt.Println("key", key)
-	encodedcommand := command.SecretBox(writingNonce, key)
+	encodedcommand := make([]byte, 0)
+	encodedcommand = secretbox.Seal(encodedcommand, command, &writingNonce, &key)
 
 	fmt.Println("encodedcommand", encodedcommand)
 	sendlen := make([]byte, 4)
@@ -90,15 +80,16 @@ func main() {
 	fmt.Println("read", n5, "bytes")
 	recvlen := binary.BigEndian.Uint32(recvlenbuf)
 	fmt.Println("should read", recvlen, "bytes")
-	recvbuf := sodium.Bytes(make([]byte, recvlen))
+	recvbuf := make([]byte, recvlen)
 	n6, err := io.ReadFull(conn, recvbuf)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Println("read", n6, "bytes")
-	decodedresponse, err := recvbuf.SecretBoxOpen(readingNonce, key)
-	if err != nil {
-		log.Fatal(err)
+	decodedresponse := make([]byte, 0)
+	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &readingNonce, &key)
+	if !ok {
+		log.Fatal("secretbox")
 	}
 	fmt.Println("response:", string(decodedresponse))
 }
