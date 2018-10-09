@@ -59,7 +59,7 @@ func main() {
 	fmt.Println("ourNonce", ourNonce)
 	fmt.Println("theirNonce", theirNonce)
 
-	command := sodium.Bytes([]byte("print(123)"))
+	command := sodium.Bytes([]byte("showVersion()"))
 	key := sodium.SecretBoxKey{}
 	key.Bytes, err = base64.StdEncoding.DecodeString("WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
 	if err != nil {
@@ -82,12 +82,23 @@ func main() {
 	}
 	fmt.Println("wrote", n4, "bytes")
 
-	// var buf []byte
-	// var nonce [24]byte
-	// nonce = writingNonce.Bytes[:]
-	// encrypted := secretbox.Seal(buf, command, &nonce, &key.Bytes)
-	// if err != nil {
-	// 	log.Fatal(err)
-	// }
-	// fmt.Println("nacl sealed", encrypted)
+	recvlenbuf := make([]byte, 4)
+	n5, err := io.ReadFull(conn, recvlenbuf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("read", n5, "bytes")
+	recvlen := binary.BigEndian.Uint32(recvlenbuf)
+	fmt.Println("should read", recvlen, "bytes")
+	recvbuf := sodium.Bytes(make([]byte, recvlen))
+	n6, err := io.ReadFull(conn, recvbuf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("read", n6, "bytes")
+	decodedresponse, err := recvbuf.SecretBoxOpen(readingNonce, key)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("response:", string(decodedresponse))
 }
