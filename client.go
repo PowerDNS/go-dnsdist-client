@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/nacl/secretbox"
 	"io"
@@ -11,7 +12,64 @@ import (
 	"net"
 )
 
-func main() {
+type DnsdistConn struct {
+	conn         net.Conn
+	readingNonce [24]byte
+	writingNonce [24]byte
+	key          [32]byte
+}
+
+func incrementNonce(nonce *[24]byte) {
+	value := binary.BigEndian.Uint32(nonce[:4])
+	value = value + 1
+	binary.BigEndian.PutUint32(nonce[:4], value)
+}
+
+func (dc *DnsdistConn) command(cmd string) (string, error) {
+	fmt.Println("key", dc.key)
+	encodedcommand := make([]byte, 0)
+	encodedcommand = secretbox.Seal(encodedcommand, []byte(cmd), &dc.writingNonce, &dc.key)
+	incrementNonce(&dc.writingNonce)
+
+	fmt.Println("encodedcommand", encodedcommand)
+	sendlen := make([]byte, 4)
+	binary.BigEndian.PutUint32(sendlen, uint32(len(encodedcommand)))
+	n3, err := dc.conn.Write(sendlen)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("wrote", n3, "bytes")
+	n4, err := dc.conn.Write(encodedcommand)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("wrote", n4, "bytes")
+
+	recvlenbuf := make([]byte, 4)
+	n5, err := io.ReadFull(dc.conn, recvlenbuf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("read", n5, "bytes")
+	recvlen := binary.BigEndian.Uint32(recvlenbuf)
+	fmt.Println("should read", recvlen, "bytes")
+	recvbuf := make([]byte, recvlen)
+	n6, err := io.ReadFull(dc.conn, recvbuf)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("read", n6, "bytes")
+	decodedresponse := make([]byte, 0)
+	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &dc.readingNonce, &dc.key)
+	incrementNonce(&dc.readingNonce)
+	if !ok {
+		log.Fatal("secretbox")
+	}
+	fmt.Println("response:", string(decodedresponse))
+	return string(decodedresponse), nil
+}
+
+func connect() (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
 	rand.Read(ourNonce)
 	fmt.Println("ourNonce", ourNonce)
@@ -47,49 +105,44 @@ func main() {
 	copy(writingNonce[12:], ourNonce[12:])
 	fmt.Println("writingNonce", writingNonce)
 
-	command := []byte("print(123); return showVersion()")
 	var key [32]byte
 	xkey, err := base64.StdEncoding.DecodeString("WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
 	if err != nil {
 		log.Fatal(err)
 	}
 	copy(key[0:32], xkey)
-	fmt.Println("key", key)
-	encodedcommand := make([]byte, 0)
-	encodedcommand = secretbox.Seal(encodedcommand, command, &writingNonce, &key)
+	dc := DnsdistConn{conn, readingNonce, writingNonce, key}
 
-	fmt.Println("encodedcommand", encodedcommand)
-	sendlen := make([]byte, 4)
-	binary.BigEndian.PutUint32(sendlen, uint32(len(encodedcommand)))
-	n3, err := conn.Write(sendlen)
+	resp, err := dc.command("")
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	fmt.Println("wrote", n3, "bytes")
-	n4, err := conn.Write(encodedcommand)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println("wrote", n4, "bytes")
 
-	recvlenbuf := make([]byte, 4)
-	n5, err := io.ReadFull(conn, recvlenbuf)
+	if resp != "" {
+		return nil, errors.New("handshake error")
+	}
+
+	resp2, err := dc.command("")
+	if err != nil {
+		return nil, err
+	}
+
+	if resp2 != "" {
+		return nil, errors.New("handshake error")
+	}
+
+	return &dc, nil
+}
+
+func main() {
+	dc, err := connect()
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("read", n5, "bytes")
-	recvlen := binary.BigEndian.Uint32(recvlenbuf)
-	fmt.Println("should read", recvlen, "bytes")
-	recvbuf := make([]byte, recvlen)
-	n6, err := io.ReadFull(conn, recvbuf)
+	fmt.Println(dc)
+	resp, err := dc.command("return showVersion()")
 	if err != nil {
 		log.Fatal(err)
 	}
-	fmt.Println("read", n6, "bytes")
-	decodedresponse := make([]byte, 0)
-	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &readingNonce, &key)
-	if !ok {
-		log.Fatal("secretbox")
-	}
-	fmt.Println("response:", string(decodedresponse))
+	fmt.Println(resp)
 }
