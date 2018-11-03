@@ -1,14 +1,14 @@
 package main
 
 import (
+	"crypto/rand"
 	"encoding/base64"
-	"io"
-	"fmt"
 	"encoding/binary"
+	"fmt"
+	"golang.org/x/crypto/nacl/secretbox"
+	"io"
 	"log"
 	"net"
-    "golang.org/x/crypto/nacl/secretbox"
-    "crypto/rand"
 )
 
 func main() {
@@ -34,7 +34,7 @@ func main() {
 	fmt.Println("theirNonce", theirNonce)
 
 	if len(ourNonce) != len(theirNonce) {
-		log.Fatal("Received a nonce of size", len(theirNonce),",  expecting ", len(ourNonce))
+		log.Fatal("Received a nonce of size", len(theirNonce), ",  expecting ", len(ourNonce))
 	}
 
 	var readingNonce [24]byte
