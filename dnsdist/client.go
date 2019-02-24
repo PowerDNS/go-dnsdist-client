@@ -122,14 +122,5 @@ func Connect(target string, secret string) (*DnsdistConn, error) {
 		return nil, errors.New("handshake error")
 	}
 
-	resp2, err := dc.Command("")
-	if err != nil {
-		return nil, err
-	}
-
-	if resp2 != "" {
-		return nil, errors.New("handshake error")
-	}
-
 	return &dc, nil
 }
