@@ -8,7 +8,7 @@ import (
 )
 
 func main() {
-	dc, err := dnsdist.Connect(os.Args[1], os.Args[2])
+	dc, err := dnsdist.Dial(os.Args[1], os.Args[2])
 	if err != nil {
 		log.Fatal(err)
 	}

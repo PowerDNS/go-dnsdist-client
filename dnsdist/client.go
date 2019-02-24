@@ -69,7 +69,7 @@ func (dc *DnsdistConn) Command(cmd string) (string, error) {
 	return string(decodedresponse), nil
 }
 
-func Connect(target string, secret string) (*DnsdistConn, error) {
+func Dial(target string, secret string) (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
 	rand.Read(ourNonce)
 	fmt.Println("ourNonce", ourNonce)
