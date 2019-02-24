@@ -1,4 +1,4 @@
-package main
+package dnsdist
 
 import (
 	"crypto/rand"
@@ -25,7 +25,7 @@ func incrementNonce(nonce *[24]byte) {
 	binary.BigEndian.PutUint32(nonce[:4], value)
 }
 
-func (dc *DnsdistConn) command(cmd string) (string, error) {
+func (dc *DnsdistConn) Command(cmd string) (string, error) {
 	fmt.Println("key", dc.key)
 	encodedcommand := make([]byte, 0)
 	encodedcommand = secretbox.Seal(encodedcommand, []byte(cmd), &dc.writingNonce, &dc.key)
@@ -69,7 +69,7 @@ func (dc *DnsdistConn) command(cmd string) (string, error) {
 	return string(decodedresponse), nil
 }
 
-func connect(target string, secret string) (*DnsdistConn, error) {
+func Connect(target string, secret string) (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
 	rand.Read(ourNonce)
 	fmt.Println("ourNonce", ourNonce)
@@ -113,7 +113,7 @@ func connect(target string, secret string) (*DnsdistConn, error) {
 	copy(key[0:32], xkey)
 	dc := DnsdistConn{conn, readingNonce, writingNonce, key}
 
-	resp, err := dc.command("")
+	resp, err := dc.Command("")
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +122,7 @@ func connect(target string, secret string) (*DnsdistConn, error) {
 		return nil, errors.New("handshake error")
 	}
 
-	resp2, err := dc.command("")
+	resp2, err := dc.Command("")
 	if err != nil {
 		return nil, err
 	}
@@ -132,17 +132,4 @@ func connect(target string, secret string) (*DnsdistConn, error) {
 	}
 
 	return &dc, nil
-}
-
-func main() {
-	dc, err := connect("127.0.0.1:5199", "WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(dc)
-	resp, err := dc.command("return showVersion()")
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(resp)
 }
