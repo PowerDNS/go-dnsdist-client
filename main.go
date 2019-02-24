@@ -10,12 +10,12 @@ import (
 func main() {
 	dc, err := dnsdist.Dial(os.Args[1], os.Args[2])
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalf("Failure dialing: %s", err)
 	}
 	fmt.Println(dc)
 	resp, err := dc.Command("return showVersion()")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatal("Failure executing command: %s", err)
 	}
 	fmt.Println(resp)
 }

@@ -108,7 +108,7 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	var key [32]byte
 	xkey, err := base64.StdEncoding.DecodeString(secret)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("while decoding shared secret: %s", err)
 	}
 	copy(key[0:32], xkey)
 	dc := DnsdistConn{conn, readingNonce, writingNonce, key}
