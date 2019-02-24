@@ -69,12 +69,12 @@ func (dc *DnsdistConn) command(cmd string) (string, error) {
 	return string(decodedresponse), nil
 }
 
-func connect() (*DnsdistConn, error) {
+func connect(target string, secret string) (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
 	rand.Read(ourNonce)
 	fmt.Println("ourNonce", ourNonce)
 
-	conn, err := net.Dial("tcp", "127.0.0.1:5199")
+	conn, err := net.Dial("tcp", target)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +106,7 @@ func connect() (*DnsdistConn, error) {
 	fmt.Println("writingNonce", writingNonce)
 
 	var key [32]byte
-	xkey, err := base64.StdEncoding.DecodeString("WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
+	xkey, err := base64.StdEncoding.DecodeString(secret)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -135,7 +135,7 @@ func connect() (*DnsdistConn, error) {
 }
 
 func main() {
-	dc, err := connect()
+	dc, err := connect("127.0.0.1:5199", "WQcBTlKzEuTbMTdydMSW1CSQvyIAINML6oIGfGOjXjE=")
 	if err != nil {
 		log.Fatal(err)
 	}
