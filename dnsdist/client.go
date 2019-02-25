@@ -36,19 +36,19 @@ func (dc *DnsdistConn) Command(cmd string) (string, error) {
 	binary.BigEndian.PutUint32(sendlen, uint32(len(encodedcommand)))
 	n3, err := dc.conn.Write(sendlen)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("while writing encoded command length: %s", err)
 	}
 	fmt.Println("wrote", n3, "bytes")
 	n4, err := dc.conn.Write(encodedcommand)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("while writing encoded command: %s", err)
 	}
 	fmt.Println("wrote", n4, "bytes")
 
 	recvlenbuf := make([]byte, 4)
 	n5, err := io.ReadFull(dc.conn, recvlenbuf)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("while reading encoded reply length: %s", err)
 	}
 	fmt.Println("read", n5, "bytes")
 	recvlen := binary.BigEndian.Uint32(recvlenbuf)
@@ -56,14 +56,14 @@ func (dc *DnsdistConn) Command(cmd string) (string, error) {
 	recvbuf := make([]byte, recvlen)
 	n6, err := io.ReadFull(dc.conn, recvbuf)
 	if err != nil {
-		log.Fatal(err)
+		return "", fmt.Errorf("while reading encoded reply: %s", err)
 	}
 	fmt.Println("read", n6, "bytes")
 	decodedresponse := make([]byte, 0)
 	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &dc.readingNonce, &dc.key)
 	incrementNonce(&dc.readingNonce)
 	if !ok {
-		log.Fatal("secretbox")
+		return "", fmt.Errorf("error decoding reply")
 	}
 	fmt.Println("response:", string(decodedresponse))
 	return string(decodedresponse), nil
