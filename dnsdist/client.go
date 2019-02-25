@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"golang.org/x/crypto/nacl/secretbox"
 	"io"
-	"log"
 	"net"
 )
 
@@ -76,23 +75,23 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("during dnsdist.Dial: %s", err)
 	}
 	n, err := conn.Write(ourNonce)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error writing our nonce: %s", err)
 	}
 	fmt.Println("wrote", n, "bytes")
 	theirNonce := make([]byte, 24)
 	n2, err := io.ReadFull(conn, theirNonce)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("error reading server nonce: %s", err)
 	}
 	fmt.Println("got", n2, "bytes")
 	fmt.Println("theirNonce", theirNonce)
 
 	if len(ourNonce) != len(theirNonce) {
-		log.Fatal("Received a nonce of size", len(theirNonce), ",  expecting ", len(ourNonce))
+		return nil, fmt.Errorf("Received a nonce of size %s, expecting %s", len(theirNonce), len(ourNonce))
 	}
 
 	var readingNonce [24]byte
