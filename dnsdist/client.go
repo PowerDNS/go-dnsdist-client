@@ -64,7 +64,10 @@ func (dc *DnsdistConn) Command(cmd string) (string, error) {
 
 func Dial(target string, secret string) (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
-	rand.Read(ourNonce)
+	_, err := rand.Read(ourNonce)
+	if err != nil {
+		return nil, fmt.Errorf("during dnsdist.Dial: %s", err)
+	}
 
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
