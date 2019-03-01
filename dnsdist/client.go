@@ -25,6 +25,16 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 		return nil, fmt.Errorf("during dnsdist.Dial: %s", err)
 	}
 
+	var key [32]byte
+	xkey, err := base64.StdEncoding.DecodeString(secret)
+	if err != nil {
+		return nil, fmt.Errorf("while decoding shared secret: %s", err)
+	}
+	if len(xkey) != 32 {
+		return nil, fmt.Errorf("shared secret is %v bytes, should be 32", len(xkey))
+	}
+	copy(key[0:32], xkey)
+
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
 		return nil, fmt.Errorf("during dnsdist.Dial: %s", err)
@@ -51,12 +61,6 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	copy(writingNonce[:12], theirNonce[:12])
 	copy(writingNonce[12:], ourNonce[12:])
 
-	var key [32]byte
-	xkey, err := base64.StdEncoding.DecodeString(secret)
-	if err != nil {
-		return nil, fmt.Errorf("while decoding shared secret: %s", err)
-	}
-	copy(key[0:32], xkey)
 	dc := DnsdistConn{conn, readingNonce, writingNonce, key}
 
 	resp, err := dc.Command("")
