@@ -78,8 +78,7 @@ func incrementNonce(nonce *[24]byte) {
 }
 
 func (dc *DnsdistConn) Command(cmd string) (string, error) {
-	encodedcommand := make([]byte, 0)
-	encodedcommand = secretbox.Seal(encodedcommand, []byte(cmd), &dc.writingNonce, &dc.key)
+	encodedcommand := secretbox.Seal(nil, []byte(cmd), &dc.writingNonce, &dc.key)
 	incrementNonce(&dc.writingNonce)
 
 	sendlen := make([]byte, 4)
