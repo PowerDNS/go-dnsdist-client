@@ -44,11 +44,11 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	}
 
 	var readingNonce [24]byte
-	copy(readingNonce[0:12], ourNonce[0:12])
+	copy(readingNonce[:12], ourNonce[:12])
 	copy(readingNonce[12:], theirNonce[12:])
 
 	var writingNonce [24]byte
-	copy(writingNonce[0:12], theirNonce[0:12])
+	copy(writingNonce[:12], theirNonce[:12])
 	copy(writingNonce[12:], ourNonce[12:])
 
 	var key [32]byte
