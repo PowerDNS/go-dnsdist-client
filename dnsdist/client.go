@@ -25,70 +25,60 @@ func incrementNonce(nonce *[24]byte) {
 }
 
 func (dc *DnsdistConn) Command(cmd string) (string, error) {
-	fmt.Println("key", dc.key)
 	encodedcommand := make([]byte, 0)
 	encodedcommand = secretbox.Seal(encodedcommand, []byte(cmd), &dc.writingNonce, &dc.key)
 	incrementNonce(&dc.writingNonce)
 
-	fmt.Println("encodedcommand", encodedcommand)
 	sendlen := make([]byte, 4)
 	binary.BigEndian.PutUint32(sendlen, uint32(len(encodedcommand)))
-	n3, err := dc.conn.Write(sendlen)
+	_, err := dc.conn.Write(sendlen)
 	if err != nil {
 		return "", fmt.Errorf("while writing encoded command length: %s", err)
 	}
-	fmt.Println("wrote", n3, "bytes")
-	n4, err := dc.conn.Write(encodedcommand)
+
+	_, err = dc.conn.Write(encodedcommand)
 	if err != nil {
 		return "", fmt.Errorf("while writing encoded command: %s", err)
 	}
-	fmt.Println("wrote", n4, "bytes")
 
 	recvlenbuf := make([]byte, 4)
-	n5, err := io.ReadFull(dc.conn, recvlenbuf)
+	_, err = io.ReadFull(dc.conn, recvlenbuf)
 	if err != nil {
 		return "", fmt.Errorf("while reading encoded reply length: %s", err)
 	}
-	fmt.Println("read", n5, "bytes")
+
 	recvlen := binary.BigEndian.Uint32(recvlenbuf)
-	fmt.Println("should read", recvlen, "bytes")
 	recvbuf := make([]byte, recvlen)
-	n6, err := io.ReadFull(dc.conn, recvbuf)
+	_, err = io.ReadFull(dc.conn, recvbuf)
 	if err != nil {
 		return "", fmt.Errorf("while reading encoded reply: %s", err)
 	}
-	fmt.Println("read", n6, "bytes")
 	decodedresponse := make([]byte, 0)
 	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &dc.readingNonce, &dc.key)
 	incrementNonce(&dc.readingNonce)
 	if !ok {
 		return "", fmt.Errorf("error decoding reply")
 	}
-	fmt.Println("response:", string(decodedresponse))
 	return string(decodedresponse), nil
 }
 
 func Dial(target string, secret string) (*DnsdistConn, error) {
 	ourNonce := make([]byte, 24)
 	rand.Read(ourNonce)
-	fmt.Println("ourNonce", ourNonce)
 
 	conn, err := net.Dial("tcp", target)
 	if err != nil {
 		return nil, fmt.Errorf("during dnsdist.Dial: %s", err)
 	}
-	n, err := conn.Write(ourNonce)
+	_, err = conn.Write(ourNonce)
 	if err != nil {
 		return nil, fmt.Errorf("error writing our nonce: %s", err)
 	}
-	fmt.Println("wrote", n, "bytes")
 	theirNonce := make([]byte, 24)
-	n2, err := io.ReadFull(conn, theirNonce)
+	_, err = io.ReadFull(conn, theirNonce)
 	if err != nil {
 		return nil, fmt.Errorf("error reading server nonce: %s", err)
 	}
-	fmt.Println("got", n2, "bytes")
-	fmt.Println("theirNonce", theirNonce)
 
 	if len(ourNonce) != len(theirNonce) {
 		return nil, fmt.Errorf("Received a nonce of size %s, expecting %s", len(theirNonce), len(ourNonce))
@@ -97,12 +87,10 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	var readingNonce [24]byte
 	copy(readingNonce[0:12], ourNonce[0:12])
 	copy(readingNonce[12:], theirNonce[12:])
-	fmt.Println("readingNonce", readingNonce)
 
 	var writingNonce [24]byte
 	copy(writingNonce[0:12], theirNonce[0:12])
 	copy(writingNonce[12:], ourNonce[12:])
-	fmt.Println("writingNonce", writingNonce)
 
 	var key [32]byte
 	xkey, err := base64.StdEncoding.DecodeString(secret)
