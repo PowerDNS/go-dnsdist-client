@@ -14,7 +14,7 @@ func main() {
 	}
 	resp, err := dc.Command(os.Args[3])
 	if err != nil {
-		log.Fatal("Failure executing command: %s", err)
+		log.Fatalf("Failure executing command: %s", err)
 	}
 	fmt.Println(resp)
 }
