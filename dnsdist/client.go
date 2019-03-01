@@ -105,8 +105,7 @@ func (dc *DnsdistConn) Command(cmd string) (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("while reading encoded reply: %s", err)
 	}
-	decodedresponse := make([]byte, 0)
-	decodedresponse, ok := secretbox.Open(decodedresponse, recvbuf, &dc.readingNonce, &dc.key)
+	decodedresponse, ok := secretbox.Open(nil, recvbuf, &dc.readingNonce, &dc.key)
 	incrementNonce(&dc.readingNonce)
 	if !ok {
 		return "", fmt.Errorf("error decoding reply")
