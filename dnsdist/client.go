@@ -50,7 +50,7 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	}
 
 	if len(ourNonce) != len(theirNonce) {
-		return nil, fmt.Errorf("received a nonce of size %s, expecting %s", len(theirNonce), len(ourNonce))
+		return nil, fmt.Errorf("received a nonce of size %v, expecting %v", len(theirNonce), len(ourNonce))
 	}
 
 	var readingNonce [24]byte
