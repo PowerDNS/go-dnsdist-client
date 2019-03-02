@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/powerdns/go-dnsdist-client/dnsdist"
+	"github.com/PowerDNS/go-dnsdist-client/dnsdist"
 	"log"
 	"os"
 )
