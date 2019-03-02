@@ -4,4 +4,4 @@ before_script:
   - go get github.com/golangci/golangci-lint/cmd/golangci-lint
   - go install github.com/golangci/golangci-lint/cmd/golangci-lint
 script:
-  - golangci-lint run
+  - golangci-lint run --enable-all # this is excessive but we get away with it for now
