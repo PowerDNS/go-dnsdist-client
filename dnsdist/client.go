@@ -6,9 +6,10 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"golang.org/x/crypto/nacl/secretbox"
 	"io"
 	"net"
+
+	"golang.org/x/crypto/nacl/secretbox"
 )
 
 type DnsdistConn struct {

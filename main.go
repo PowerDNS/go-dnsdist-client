@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/PowerDNS/go-dnsdist-client/dnsdist"
 	"log"
 	"os"
+
+	"github.com/PowerDNS/go-dnsdist-client/dnsdist"
 )
 
 func main() {
