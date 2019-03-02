@@ -12,14 +12,14 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
-type DnsdistConn struct {
+type Conn struct {
 	conn         net.Conn
 	readingNonce [24]byte
 	writingNonce [24]byte
 	key          [32]byte
 }
 
-func Dial(target string, secret string) (*DnsdistConn, error) {
+func Dial(target string, secret string) (*Conn, error) {
 	ourNonce := make([]byte, 24)
 	_, err := rand.Read(ourNonce)
 	if err != nil {
@@ -62,7 +62,7 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 	copy(writingNonce[:12], theirNonce[:12])
 	copy(writingNonce[12:], ourNonce[12:])
 
-	dc := DnsdistConn{conn, readingNonce, writingNonce, key}
+	dc := Conn{conn, readingNonce, writingNonce, key}
 
 	resp, err := dc.Command("")
 	if err != nil {
@@ -78,11 +78,11 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 
 func incrementNonce(nonce *[24]byte) {
 	value := binary.BigEndian.Uint32(nonce[:4])
-	value += 1
+	value++
 	binary.BigEndian.PutUint32(nonce[:4], value)
 }
 
-func (dc *DnsdistConn) Command(cmd string) (string, error) {
+func (dc *Conn) Command(cmd string) (string, error) {
 	encodedcommand := secretbox.Seal(nil, []byte(cmd), &dc.writingNonce, &dc.key)
 	incrementNonce(&dc.writingNonce)
 
