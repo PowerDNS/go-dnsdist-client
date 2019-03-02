@@ -1,0 +1,15 @@
+version: 2
+jobs:
+  build:
+    docker:
+      - image: circleci/golang:1.11
+    working_directory: /go/src/github.com/PowerDNS/go-dnsdist-client
+
+    steps:
+      - checkout
+      - run: go get -v
+      - run: go test -v ./...
+      - run: go get github.com/golangci/golangci-lint/cmd/golangci-lint
+      - run: go install github.com/golangci/golangci-lint/cmd/golangci-lint
+      - run: golangci-lint run --enable-all # this is excessive but we get away with it for now
+      
