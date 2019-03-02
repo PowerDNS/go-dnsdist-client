@@ -78,7 +78,7 @@ func Dial(target string, secret string) (*DnsdistConn, error) {
 
 func incrementNonce(nonce *[24]byte) {
 	value := binary.BigEndian.Uint32(nonce[:4])
-	value = value + 1
+	value += 1
 	binary.BigEndian.PutUint32(nonce[:4], value)
 }
 
