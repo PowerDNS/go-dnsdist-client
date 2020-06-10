@@ -1,7 +1,9 @@
 sudo: false
 language: go
-before_script:
-  - go get github.com/golangci/golangci-lint/cmd/golangci-lint
-  - go install github.com/golangci/golangci-lint/cmd/golangci-lint
+env:
+  - GO111MODULE=on
+go:
+  - 1.x  # latest version
+  - 1.12 # lowest supported version
 script:
-  - golangci-lint run --enable-all # this is excessive but we get away with it for now
+  - ./test.sh

@@ -1,0 +1,12 @@
+# See https://github.com/golangci/golangci-lint/blob/master/.golangci.yml for more examples
+
+linters:
+    enabled:
+        # In addition to default standard linters (see: golangci-lint help linters)
+        # Try extra ones line this: golangci-lint run --disable-all --enable=lll
+        - goimports
+        # For future consideration (requires some extra work, but suggestions look useful)
+        # - gocritic
+        # - golint # can sometimes be a bit pedantic
+        # - lll
+
