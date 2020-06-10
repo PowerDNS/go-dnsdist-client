@@ -12,6 +12,7 @@ import (
 	"golang.org/x/crypto/nacl/secretbox"
 )
 
+// Conn is a connection to the dnsdist console
 type Conn struct {
 	conn         net.Conn
 	readingNonce [24]byte
@@ -19,6 +20,8 @@ type Conn struct {
 	key          [32]byte
 }
 
+// Dial connects to a dnsdist server. The target address is a host with port.
+// The secret is a base64 encoded 32 byte key as returned by makeKey() in the console.
 func Dial(target string, secret string) (*Conn, error) {
 	ourNonce := make([]byte, 24)
 	_, err := rand.Read(ourNonce)
@@ -82,6 +85,8 @@ func incrementNonce(nonce *[24]byte) {
 	binary.BigEndian.PutUint32(nonce[:4], value)
 }
 
+// Command sends one command to dnsdist. It returns an error if the call failed.
+// Application level (dnsdist Lua) errors do not result in a Go error.
 func (dc *Conn) Command(cmd string) (string, error) {
 	encodedcommand := secretbox.Seal(nil, []byte(cmd), &dc.writingNonce, &dc.key)
 	incrementNonce(&dc.writingNonce)
@@ -116,4 +121,9 @@ func (dc *Conn) Command(cmd string) (string, error) {
 		return "", fmt.Errorf("error decoding reply")
 	}
 	return string(decodedresponse), nil
+}
+
+// Close closes the connection
+func (dc *Conn) Close() error {
+	return dc.conn.Close()
 }
