@@ -6,4 +6,6 @@ go:
   - 1.x  # latest version
   - 1.12 # lowest supported version
 script:
-  - ./test.sh
+  # -short skips testing against dnsdist
+  # TODO: install dnsdist
+  - ./test.sh -v -short
